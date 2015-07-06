@@ -58,6 +58,55 @@ new ShowcaseView.Builder(this)
     .hideOnTouchOutside()
     .build();
 ~~~
+Or build multiple screens 
+~~~
+ShowcaseViews showcaseViews = new ShowcaseViews(this);
+            ShowcaseViews.ItemViewProperties itemViewProperties = new ShowcaseViews.ItemViewProperties(
+                    R.style.CustomShowcaseTheme,
+                    new ViewTarget(fragmentMyAlbum.rlHead),
+                    R.string.tutorial_title,
+                    R.string.tutorial_desc,
+                    R.string.tutorial_next,
+                    -1,
+                    false,
+                    false);
+            showcaseViews.addView(itemViewProperties);
+
+            itemViewProperties = new ShowcaseViews.ItemViewProperties(
+                    R.style.CustomShowcaseTheme,
+                    new ViewTarget(llMyAlbum),
+                    R.string.tutorial_title,
+                    R.string.tutorial_desc,
+                    R.string.tutorial_exit,
+                    -1,
+                    false,
+                    false);
+            showcaseViews.addView(itemViewProperties);
+
+            itemViewProperties = new ShowcaseViews.ItemViewProperties(
+                    R.style.CustomShowcaseTheme,
+                    new ViewTarget(llFriendAlbum),
+                    R.string.tutorial_title,
+                    R.string.tutorial_desc,
+                    R.string.tutorial_exit,
+                    -1,
+                    false,
+                    false);
+            showcaseViews.addView(itemViewProperties);
+
+            itemViewProperties = new ShowcaseViews.ItemViewProperties(
+                    R.style.CustomShowcaseTheme,
+                    new ViewTarget(llMy),
+                    R.string.tutorial_title,
+                    R.string.tutorial_desc,
+                    R.string.tutorial_exit,
+                    -1,
+                    false,
+                    false);
+            showcaseViews.addView(itemViewProperties);
+
+            showcaseViews.show();
+~~~
 
 You can use styles to customise how a ShowcaseView looks. I'll write more documentation soon, but for now, check out the sample project's [styles](https://github.com/amlcurran/ShowcaseView/blob/master/sample/src/main/res/values/styles.xml).
 
