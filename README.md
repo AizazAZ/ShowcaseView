@@ -110,6 +110,24 @@ ShowcaseViews showcaseViews = new ShowcaseViews(this);
 
 You can use styles to customise how a ShowcaseView looks. I'll write more documentation soon, but for now, check out the sample project's [styles](https://github.com/amlcurran/ShowcaseView/blob/master/sample/src/main/res/values/styles.xml).
 
+Example:
+~~~
+<style name="CustomShowcaseTheme" parent="ShowcaseView.Light">
+        <item name="sv_backgroundColor">#3300A621</item>
+        <item name="sv_showcaseColor">#00801A</item>
+        <item name="sv_detailTextAppearance">@style/CustomDetailColor</item>
+        <item name="sv_buttonText">Hide</item>
+        <item name="sv_tintButtonColor">false</item>
+        <item name="sv_titleTextAppearance">@style/CustomTitle</item>
+    </style>
+    <style name="CustomTitle" parent="TextAppearance.ShowcaseView.Title">
+        <item name="android:textColor">#00801A</item>
+    </style>
+    <style name="CustomDetailColor">
+        <item name="android:textColor">#ffff9710</item>
+    </style>
+~~~
+
 Sample Project
 ----
 There's a sample project available which you can find in the project, or as an app on the [Google Play Store](https://play.google.com/store/apps/details?id=com.espian.showcaseview.sample).
