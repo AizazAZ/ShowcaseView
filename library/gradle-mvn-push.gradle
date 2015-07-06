@@ -94,6 +94,29 @@ afterEvaluate { project ->
         sign configurations.archives
     }
 
+    task githubUpload(type: Upload) {
+        description "Installs the artifacts to the local github location."
+        configuration = configurations['archives']
+        repositories {
+            mavenDeployer {
+                pom.groupId = GROUP
+                pom.artifactId = POM_ARTIFACT_ID
+                pom.version = VERSION_NAME
+                
+                repository url: "file://$projectDir/../../repo/repository"
+            }
+        }
+    }
+
+    task githubExec(type: Exec) {
+        executable "sh"
+        args "$projectDir/../../push-showcaseview-repo"
+    }
+
+    task github(dependsOn: ['githubUpload', 'githubExec']) {
+        githubExec.mustRunAfter githubUpload
+    }
+
     task apklib(type: Zip) {
         appendix = extension = 'apklib'
 

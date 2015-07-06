@@ -24,16 +24,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
+import android.view.*;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
+import com.github.amlcurran.showcaseview.ShowcaseView.Builder;
 import com.github.amlcurran.showcaseview.targets.Target;
 
 import static com.github.amlcurran.showcaseview.AnimationFactory.AnimationEndListener;
@@ -67,6 +65,8 @@ public class ShowcaseView extends RelativeLayout
 
     private boolean hasAlteredText = false;
     private boolean hasNoTarget = false;
+    private Target pendingTarget = null;
+    private boolean isAnimated = false;
     private boolean shouldCentreText;
     private Bitmap bitmapBuffer;
 
@@ -74,6 +74,14 @@ public class ShowcaseView extends RelativeLayout
     private long fadeInMillis;
     private long fadeOutMillis;
     private boolean isShowing;
+
+    //Whether to manually shift text
+    public boolean hasManualTextPosShift;
+    public boolean hasManualBoxPosShift;
+    
+    //Where to manually shuffly showcase item positions
+    private int textXPosShift;
+    private int textYPosShift;
 
     protected ShowcaseView(Context context, boolean newStyle) {
         this(context, null, R.styleable.CustomTheme_showcaseViewStyle, newStyle);
@@ -156,37 +164,52 @@ public class ShowcaseView extends RelativeLayout
     }
 
     public void setShowcase(final Target target, final boolean animate) {
-        postDelayed(new Runnable() {
-            @Override
-            public void run() {
+        if (!shotStateStore.hasShot()) {
 
-                if (!shotStateStore.hasShot()) {
-
-                    updateBitmap();
-                    Point targetPoint = target.getPoint();
-                    if (targetPoint != null) {
-                        hasNoTarget = false;
-                        if (animate) {
-                            animationFactory.animateTargetToPoint(ShowcaseView.this, targetPoint);
-                        } else {
-                            setShowcasePosition(targetPoint);
-                        }
-                    } else {
-                        hasNoTarget = true;
-                        invalidate();
-                    }
-
+            updateBitmap();
+            Point targetPoint = target.getPoint();
+            if (targetPoint != null) {
+                hasNoTarget = false;
+                if (animate) {
+                    animationFactory.animateTargetToPoint(ShowcaseView.this, targetPoint);
+                } else {
+                    setShowcasePosition(targetPoint);
                 }
+            } else {
+                hasNoTarget = true;
+                invalidate();
             }
-        }, 100);
+
+        }
     }
 
     private void updateBitmap() {
-        if (bitmapBuffer == null || haveBoundsChanged()) {
+        if ((bitmapBuffer == null || haveBoundsChanged()) && getMeasuredHeight() > 0 && getMeasuredWidth() > 0) {
             if(bitmapBuffer != null)
         		bitmapBuffer.recycle();
-            bitmapBuffer = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+            int width = getMeasuredWidth();
+            int height = getMeasuredHeight();
+            if(width > 0 && height > 0)
+                bitmapBuffer = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
+        }
+    }
+
+    private void updatePosition() {
+        if(pendingTarget != null) {
+            Point targetPoint = pendingTarget.getPoint();
+            if (targetPoint != null && (targetPoint.x != 0 || targetPoint.y != 0)) {
+                hasNoTarget = false;
+                if (isAnimated) {
+                    animationFactory.animateTargetToPoint(ShowcaseView.this, targetPoint);
+                } else {
+                    setShowcasePosition(targetPoint);
+                }
+                pendingTarget = null;
+            } else {
+                hasNoTarget = true;
+                invalidate();
+            }
         }
     }
 
@@ -253,6 +276,9 @@ public class ShowcaseView extends RelativeLayout
         boolean recalculateText = recalculatedCling || hasAlteredText;
         if (recalculateText) {
             textDrawer.calculateTextPosition(getMeasuredWidth(), getMeasuredHeight(), this, shouldCentreText);
+            if (hasManualTextPosShift) {
+                textDrawer.setTextPostionShift(textXPosShift, textYPosShift);
+            }
         }
         hasAlteredText = false;
     }
@@ -343,6 +369,24 @@ public class ShowcaseView extends RelativeLayout
     }
 
     private static void insertShowcaseView(ShowcaseView showcaseView, Activity activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Display display = ((WindowManager) activity.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+            int myOrientation = display.getRotation();
+            switch (myOrientation) {
+                case Surface.ROTATION_0:
+                    showcaseView.setPadding(0, 0, 0, ApiUtils.getSoftButtonsBarSizePort(activity));
+                    break;
+                case Surface.ROTATION_90:
+                    showcaseView.setPadding(0, 0, ApiUtils.getSoftButtonsBarSizeLand(activity), 0);
+                    break;
+                case Surface.ROTATION_180:
+                    showcaseView.setPadding(0, 0, 0, ApiUtils.getSoftButtonsBarSizePort(activity));
+                    break;
+                case Surface.ROTATION_270:
+                    showcaseView.setPadding(0, 0, ApiUtils.getSoftButtonsBarSizeLand(activity), 0);
+                    break;
+            }
+        }
         ((ViewGroup) activity.getWindow().getDecorView()).addView(showcaseView);
         if (!showcaseView.hasShot()) {
             showcaseView.show();
@@ -438,6 +482,22 @@ public class ShowcaseView extends RelativeLayout
         }
 
         /**
+         * Sets the button text shown on the ShowcaseView.
+         */
+        public Builder setButtonText(int resId) {
+            showcaseView.setButtonText(activity.getString(resId));
+            return this;
+        }
+
+        /**
+         * Sets the button text shown on the ShowcaseView.
+         */
+        public Builder setButtonText(CharSequence text) {
+            showcaseView.setButtonText(text);
+            return this;
+        }
+
+        /**
          * Set the target of the showcase.
          *
          * @param target a {@link com.github.amlcurran.showcaseview.targets.Target} representing
@@ -503,6 +563,31 @@ public class ShowcaseView extends RelativeLayout
         public Builder setShowcaseEventListener(OnShowcaseEventListener showcaseEventListener) {
             showcaseView.setOnShowcaseEventListener(showcaseEventListener);
             return this;
+        }
+        
+        /**
+         * Set the amount to shift the Showcaseview from its default position (in dp).
+         * Default is 0 dp.
+         * 
+         * @param textXPosShift dp to shift the ShowcaseView to the right
+         * @param textYPosShift dp to shift the ShowcaseView downward
+         */
+	public Builder textPostionShift(int textXPosShift, int textYPosShift) {
+	    showcaseView.textXPosShift = textXPosShift;
+	    showcaseView.textYPosShift = textYPosShift;
+	    showcaseView.hasManualTextPosShift = true;
+	    return this;
+	}
+
+	/**
+	 * Scales the inner & outer circles surrounding the element being showcased.
+	 * 
+	 * @param scaleMultiplier default radii of circles around showcased item are multiplied by
+	 *                        this to produce the actual radii the circles will be drawn with.
+	 */
+	public Builder scaleCircle(float scaleMultiplier) {
+            showcaseView.scaleMultiplier = scaleMultiplier;	
+	    return this;
         }
     }
 
@@ -633,5 +718,24 @@ public class ShowcaseView extends RelativeLayout
             hide();
         }
     };
+
+    @Override
+    public void setInnerCircleRadius(float innerRadius) {
+        showcaseDrawer.setInnerCircleRadius(innerRadius);
+    }
+
+
+    @Override
+    public void setOuterCircleRadius(float outerRadius) {
+        showcaseDrawer.setOuterCircleRadius(outerRadius);
+    }
+
+    protected long getFadeOutMillis() {
+        return fadeOutMillis;
+    }
+
+    protected long getFadeInMillis() {
+        return fadeInMillis;
+    }
 
 }
