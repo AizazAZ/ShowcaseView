@@ -1,6 +1,6 @@
 ShowcaseView is deprecated
 ====
-Currently, ShowcaseView is not under active development; issues cannot be opened and PRs will not be accepted.
+Fixed bugs, memory optimization/improvements, this branch is 25 commits ahead of the original branch.
 
 I've decided to make this decision because I want to rewrite the project from scratch with a far better API. A lot of things Google keep introducing in Android break ShowcaseView and it is too difficult to make these changes with the project in it's current form.
 
